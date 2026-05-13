@@ -3,103 +3,88 @@
 <script>
   /* global nn */
 
-  nn.load(() => {
+  const COLS = 160, ROWS = 100, PX = 6
 
-    const COLS = 160,
-      ROWS = 100,
-      PX = 6
+  const canvas = nn.create('canvas')
+    .set('width', COLS)
+    .set('height', ROWS)
+    .css('display', 'block')
+    .css('image-rendering', 'pixelated')
+    .css('image-rendering', 'crisp-edges')
+    .css('width', COLS * PX + 'px')
+    .css('height', ROWS * PX + 'px')
+    .addTo('body')
 
-    const canvas = nn.create('canvas')
-      .set('width', COLS)
-      .set('height', ROWS)
-      .css('display', 'block')
-      .css('image-rendering', 'pixelated')
-      .css('image-rendering', 'crisp-edges')
-      .css('width', COLS * PX + 'px')
-      .css('height', ROWS * PX + 'px')
-      .addTo('body')
+  const ctx = document.querySelector('canvas').getContext('2d')
+  ctx.imageSmoothingEnabled = false
 
-    const ctx = document.querySelector('canvas').getContext('2d')
-    ctx.imageSmoothingEnabled = false
+  const grid = new Uint8Array(COLS * ROWS)
+  const g = (x, y) => grid[y * COLS + x]
+  const set = (x, y, v) => { grid[y * COLS + x] = v }
+  const inb = (x, y) => x >= 0 && x < COLS && y >= 0 && y < ROWS
 
-    const grid = new Uint8Array(COLS * ROWS)
-    const g = (x, y) => grid[y * COLS + x]
-    const set = (x, y, v) => {
-      grid[y * COLS + x] = v
+  let total = 0, frame = 0
+
+  const counter = nn.create('div')
+    .css('font-family', 'monospace')
+    .css('font-size', '13px')
+    .css('margin-top', '8px')
+    .css('color', '#333')
+    .content('pixels: 0')
+    .addTo('body')
+
+  function spawnPixel () {
+    const x = Math.floor(COLS / 2) + Math.floor((Math.random() - 0.5) * 6)
+    if (inb(x, 0) && g(x, 0) === 0) {
+      set(x, 0, 1)
+      total++
     }
-    const inb = (x, y) => x >= 0 && x < COLS && y >= 0 && y < ROWS
+  }
 
-    let total = 0,
-      frame = 0
-
-    const counter = nn.create('div')
-      .css('font-family', 'monospace')
-      .css('font-size', '13px')
-      .css('margin-top', '8px')
-      .css('color', '#333')
-      .content('pixels: 0')
-      .addTo('body')
-
-    function spawnPixel () {
-      const x = Math.floor(COLS / 2) + Math.floor((Math.random() - 0.5) * 6)
-      if (inb(x, 0) && g(x, 0) === 0) {
-        set(x, 0, 1)
-        total++
-      }
-    }
-
-    function settle () {
-      for (let y = ROWS - 2; y >= 0; y--) {
-        for (let x = 0; x < COLS; x++) {
-          if (g(x, y) !== 1) continue
-          if (inb(x, y + 1) && g(x, y + 1) === 0) {
+  function settle () {
+    for (let y = ROWS - 2; y >= 0; y--) {
+      for (let x = 0; x < COLS; x++) {
+        if (g(x, y) !== 1) continue
+        if (inb(x, y + 1) && g(x, y + 1) === 0) {
+          set(x, y, 0)
+          set(x, y + 1, 1)
+        } else {
+          const goLeft = Math.random() < 0.5
+          const d1 = goLeft ? -1 : 1
+          const d2 = goLeft ? 1 : -1
+          if (inb(x + d1, y + 1) && g(x + d1, y + 1) === 0) {
             set(x, y, 0)
-            set(x, y + 1, 1)
-          } else {
-            const goLeft = Math.random() < 0.5
-            const d1 = goLeft ? -1 : 1
-            const d2 = goLeft ? 1 : -1
-            if (inb(x + d1, y + 1) && g(x + d1, y + 1) === 0) {
-              set(x, y, 0)
-              set(x + d1, y + 1, 1)
-            } else if (inb(x + d2, y + 1) && g(x + d2, y + 1) === 0) {
-              set(x, y, 0)
-              set(x + d2, y + 1, 1)
-            }
+            set(x + d1, y + 1, 1)
+          } else if (inb(x + d2, y + 1) && g(x + d2, y + 1) === 0) {
+            set(x, y, 0)
+            set(x + d2, y + 1, 1)
           }
         }
       }
     }
+  }
 
-    function render () {
-      const img = ctx.createImageData(COLS, ROWS)
-      const d = img.data
-      for (let i = 0; i < COLS * ROWS; i++) {
-        const base = i * 4
-        if (grid[i] === 1) {
-          d[base] = 20;
-          d[base + 1] = 20;
-          d[base + 2] = 20;
-          d[base + 3] = 255
-        } else {
-          d[base] = 240;
-          d[base + 1] = 237;
-          d[base + 2] = 232;
-          d[base + 3] = 255
-        }
+  function render () {
+    const img = ctx.createImageData(COLS, ROWS)
+    const d = img.data
+    for (let i = 0; i < COLS * ROWS; i++) {
+      const base = i * 4
+      if (grid[i] === 1) {
+        d[base] = 20; d[base + 1] = 20; d[base + 2] = 20; d[base + 3] = 255
+      } else {
+        d[base] = 240; d[base + 1] = 237; d[base + 2] = 232; d[base + 3] = 255
       }
-      ctx.putImageData(img, 0, 0)
     }
+    ctx.putImageData(img, 0, 0)
+  }
 
-    function loop () {
-      frame++
-      if (frame % 2 === 0) spawnPixel()
-      settle()
-      render()
-      counter.content('pixels: ' + total)
-    }
+  function loop () {
+    frame++
+    if (frame % 2 === 0) spawnPixel()
+    settle()
+    render()
+    counter.content('pixels: ' + total)
+  }
 
-    nn.on('update', loop)
-
-  }) // end nn.load
+  nn.on('update', loop)
 </script>
