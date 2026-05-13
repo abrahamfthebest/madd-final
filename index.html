@@ -2,7 +2,6 @@
 <script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js"></script>
 <script>
   /* global nn */
-
   const COLS = 160,
     ROWS = 100,
     PX = 6
@@ -17,8 +16,7 @@
     .css('height', ROWS * PX + 'px')
     .addTo('body')
 
-  const el = canvas.ele
-  const ctx = el.getContext('2d')
+  const ctx = canvas.dom.getContext('2d')
   ctx.imageSmoothingEnabled = false
 
   const grid = new Uint8Array(COLS * ROWS)
