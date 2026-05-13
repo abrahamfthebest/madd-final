@@ -84,7 +84,8 @@
     settle()
     render()
     counter.content('pixels: ' + total)
+    requestAnimationFrame(loop)
   }
 
-  nn.on('update', loop)
+  loop()
 </script>
